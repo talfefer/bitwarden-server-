@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -86,21 +87,28 @@ namespace Bit.Core.IdentityServer
             var twoFactorRequest = !string.IsNullOrWhiteSpace(twoFactorToken) &&
                 !string.IsNullOrWhiteSpace(twoFactorProvider);
 
+
             var (user, valid) = await ValidateContextAsync(context);
             if (!valid)
             {
+                _logger.LogInformation("Validation context invalid");
                 await UpdateFailedAuthDetailsAsync(user, false, unknownDevice);
                 await BuildErrorResultAsync("Username or password is incorrect. Try again.", false, context, user);
                 return;
             }
 
+            _logger.LogInformation("Validating if requires 2FA");
             var (isTwoFactorRequired, requires2FABecauseNewDevice, twoFactorOrganization) = await RequiresTwoFactorAsync(user, request);
             if (isTwoFactorRequired)
             {
+
+                _logger.LogInformation("2FA Required");
+
                 // Just defaulting it
                 var twoFactorProviderType = TwoFactorProviderType.Authenticator;
                 if (!twoFactorRequest || !Enum.TryParse(twoFactorProvider, out twoFactorProviderType))
                 {
+                    _logger.LogInformation($"2FA request has: {twoFactorProviderType}");
                     await BuildTwoFactorResultAsync(user, twoFactorOrganization, context, requires2FABecauseNewDevice);
                     return;
                 }
@@ -128,14 +136,21 @@ namespace Bit.Core.IdentityServer
             }
             else
             {
+
+                _logger.LogInformation($"2FA NOT required");
+
                 twoFactorRequest = false;
                 twoFactorRemember = false;
                 twoFactorToken = null;
             }
 
+
+            _logger.LogInformation($"Validating auth type: {request.GrantType}");
+
             // Returns true if can finish validation process
             if (await IsValidAuthTypeAsync(user, request.GrantType))
             {
+                _logger.LogInformation($"Auth type valid");
                 var device = await SaveDeviceAsync(user, request);
                 if (device == null)
                 {
@@ -146,6 +161,7 @@ namespace Bit.Core.IdentityServer
             }
             else
             {
+                _logger.LogInformation($"Auth type invalid, SSO result");
                 SetSsoResult(context, new Dictionary<string, object>
                 {{
                     "ErrorModel", new ErrorResponseModel("SSO authentication is required.")
@@ -294,13 +310,18 @@ namespace Bit.Core.IdentityServer
         {
             if (request.GrantType == "client_credentials")
             {
+                _logger.LogInformation($"2FA not required client_credentials");
                 // Do not require MFA for api key logins
                 return new Tuple<bool, bool, Organization>(false, false, null);
             }
 
+            _logger.LogInformation($"2FA vaalidating individual");
             var individualRequired = _userManager.SupportsUserTwoFactor &&
                 await _userManager.GetTwoFactorEnabledAsync(user) &&
                 (await _userManager.GetValidTwoFactorProvidersAsync(user)).Count > 0;
+
+
+            _logger.LogInformation($"2FA individual requirred: {individualRequired}");
 
             Organization firstEnabledOrg = null;
             var orgs = (await _currentContext.OrganizationMembershipAsync(_organizationUserRepository, user.Id))
@@ -316,14 +337,28 @@ namespace Bit.Core.IdentityServer
                         o => orgs.Any(om => om.Id == o.Id) && o.TwoFactorIsEnabled());
                 }
             }
+            _logger.LogInformation($"2FA org enabled: {firstEnabledOrg != null}");
 
             var requires2FA = individualRequired || firstEnabledOrg != null;
+
+
+            _logger.LogInformation($"2FA requierd: {requires2FA}");
+
+            _logger.LogInformation($"2FA requierd: {requires2FA}");
+            _logger.LogInformation($"user.EmailVerified: {user.EmailVerified}");
+            _logger.LogInformation($"request.GrantType: {request.GrantType}");
+
             var requires2FABecauseNewDevice = !requires2FA
                                               && user.EmailVerified
                                               && request.GrantType != "authorization_code"
                                               && await IsNewDeviceAndNotTheFirstOneAsync(user, request);
 
+            _logger.LogInformation($"2FA requierd bc new device: {requires2FABecauseNewDevice}");
+
             requires2FA = requires2FA || requires2FABecauseNewDevice;
+
+
+            _logger.LogInformation($"2FA required with n device: {requires2FA}");
 
             return new Tuple<bool, bool, Organization>(requires2FA, requires2FABecauseNewDevice, firstEnabledOrg);
         }
@@ -538,18 +573,34 @@ namespace Bit.Core.IdentityServer
 
         protected async Task<bool> IsNewDeviceAndNotTheFirstOneAsync(User user, ValidatedTokenRequest request)
         {
+            _logger.LogInformation($"IsNewDeviceAndNotTheFirstOneAsync");
             if (user == null)
             {
+                _logger.LogInformation($"IsNewDeviceAndNotTheFirstOneAsync user is null");
                 return default;
             }
 
             var devices = await _deviceRepository.GetManyByUserIdAsync(user.Id);
             if (!devices.Any())
             {
+                _logger.LogInformation($"IsNewDeviceAndNotTheFirstOneAsync no device for user {user.Id}");
                 return false;
             }
 
-            return !devices.Any(d => d.Identifier == GetDeviceFromRequest(request)?.Identifier);
+            var identifier = GetDeviceFromRequest(request)?.Identifier;
+
+            var d = !devices.Any(d => d.Identifier == identifier);
+
+            _logger.LogInformation($"IsNewDeviceAndNotTheFirstOneAsync has device for identifier {identifier}");
+            if (!d)
+            {
+                foreach (var dd in devices.Where(d => d.Identifier == identifier))
+                {
+                    _logger.LogInformation($"IsNewDeviceAndNotTheFirstOneAsync Device for identifier {identifier} : {dd.Name}");
+                }
+            }
+
+            return d;
         }
 
         private async Task<Device> SaveDeviceAsync(User user, ValidatedTokenRequest request)
