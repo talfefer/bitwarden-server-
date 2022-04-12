@@ -21,6 +21,7 @@ using Bit.Core.Settings;
 using Bit.Core.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Bit.Api.Controllers
 {
@@ -39,6 +40,7 @@ namespace Bit.Api.Controllers
         private readonly IUserService _userService;
         private readonly ISendRepository _sendRepository;
         private readonly ISendService _sendService;
+        private readonly ILogger<AccountsController> _logger;
 
         public AccountsController(
             GlobalSettings globalSettings,
@@ -51,7 +53,8 @@ namespace Bit.Api.Controllers
             IUserRepository userRepository,
             IUserService userService,
             ISendRepository sendRepository,
-            ISendService sendService)
+            ISendService sendService,
+            ILogger<AccountsController> logger)
         {
             _cipherRepository = cipherRepository;
             _folderRepository = folderRepository;
@@ -64,6 +67,7 @@ namespace Bit.Api.Controllers
             _userService = userService;
             _sendRepository = sendRepository;
             _sendService = sendService;
+            _logger = logger;
         }
 
         #region DEPRECATED (Moved to Identity Service)
@@ -113,6 +117,7 @@ namespace Bit.Api.Controllers
         [AllowAnonymous]
         public async Task PostPasswordHint([FromBody] PasswordHintRequestModel model)
         {
+            _logger.LogInformation("Pass Hiint testing if logger info is working here");
             await _userService.SendMasterPasswordHintAsync(model.Email);
         }
 
