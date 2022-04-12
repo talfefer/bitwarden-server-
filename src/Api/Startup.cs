@@ -226,7 +226,7 @@ namespace Bit.Api
             }
 
             // Log startup
-            logger.LogInformation(Constants.BypassFiltersEventId, globalSettings.ProjectName + " started.");
+            logger.LogInformation(Constants.BypassFiltersEventId, globalSettings.ProjectName + " started jajajaaja.");
         }
     }
 }
