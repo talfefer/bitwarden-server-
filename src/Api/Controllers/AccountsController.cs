@@ -117,7 +117,7 @@ namespace Bit.Api.Controllers
         [AllowAnonymous]
         public async Task PostPasswordHint([FromBody] PasswordHintRequestModel model)
         {
-            _logger.LogInformation("Pass Hiint testing if logger info is working here");
+            _logger.LogInformation(Constants.BypassFiltersEventId, "Pass Hiint testing if logger info is working here");
             await _userService.SendMasterPasswordHintAsync(model.Email);
         }
 
