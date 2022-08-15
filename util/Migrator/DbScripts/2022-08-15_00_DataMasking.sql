@@ -1,4 +1,7 @@
 ALTER TABLE [dbo].[User]
+ALTER COLUMN [Name] ADD MASKED WITH (FUNCTION = 'default()');
+
+ALTER TABLE [dbo].[User]
 ALTER COLUMN [Email] ADD MASKED WITH (FUNCTION = 'default()');
 
 ALTER TABLE [dbo].[User]
