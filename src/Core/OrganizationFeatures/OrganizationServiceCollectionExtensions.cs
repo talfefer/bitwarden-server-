@@ -1,6 +1,8 @@
 ﻿using Bit.Core.Models.Business.Tokenables;
 using Bit.Core.OrganizationFeatures.OrganizationApiKeys;
 using Bit.Core.OrganizationFeatures.OrganizationApiKeys.Interfaces;
+using Bit.Core.OrganizationFeatures.OrganizationCollections;
+using Bit.Core.OrganizationFeatures.OrganizationCollections.Interfaces;
 using Bit.Core.OrganizationFeatures.OrganizationConnections;
 using Bit.Core.OrganizationFeatures.OrganizationConnections.Interfaces;
 using Bit.Core.OrganizationFeatures.OrganizationSponsorships.FamiliesForEnterprise;
@@ -25,6 +27,12 @@ public static class OrganizationServiceCollectionExtensions
         services.AddOrganizationConnectionCommands();
         services.AddOrganizationSponsorshipCommands(globalSettings);
         services.AddOrganizationApiKeyCommands();
+        services.AddOrganizationCollectionCommands();
+    }
+
+    public static void AddOrganizationCollectionCommands(this IServiceCollection services)
+    {
+        services.AddScoped<IDeleteCollectionCommand, DeleteCollectionCommand>();
     }
 
     private static void AddOrganizationConnectionCommands(this IServiceCollection services)
