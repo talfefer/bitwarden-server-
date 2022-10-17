@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
+using Bit.Admin.IdentityServer;
 using Bit.Core.Context;
-using Bit.Core.Identity;
 using Bit.Core.Settings;
 using Bit.Core.Utilities;
 using Bit.SharedWeb.Utilities;
@@ -42,7 +42,21 @@ public class Startup
         StripeConfiguration.MaxNetworkRetries = globalSettings.Stripe.MaxNetworkRetries;
 
         // Repositories
-        services.AddSqlServerRepositories(globalSettings);
+        var databaseProvider = services.AddSqlServerRepositories(globalSettings);
+        switch (databaseProvider)
+        {
+            case Core.Enums.SupportedDatabaseProviders.SqlServer:
+                services.AddSingleton<IDbMigrator, Migrator.SqlServerDbMigrator>();
+                break;
+            case Core.Enums.SupportedDatabaseProviders.MySql:
+                services.AddSingleton<IDbMigrator, MySqlMigrations.MySqlDbMigrator>();
+                break;
+            case Core.Enums.SupportedDatabaseProviders.Postgres:
+                services.AddSingleton<IDbMigrator, PostgresMigrations.PostgresDbMigrator>();
+                break;
+            default:
+                break;
+        }
 
         // Context
         services.AddScoped<ICurrentContext, CurrentContext>();
