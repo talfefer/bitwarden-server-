@@ -29,3 +29,10 @@ public class CollectionRequestModel
         return existingCollection;
     }
 }
+
+public class CollectionBulkDeleteRequestModel
+{
+    [Required]
+    public IEnumerable<string> Ids { get; set; }
+    public string OrganizationId { get; set; }
+}
