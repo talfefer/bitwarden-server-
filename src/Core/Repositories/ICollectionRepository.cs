@@ -19,5 +19,5 @@ public interface ICollectionRepository : IRepository<Collection, Guid>
     Task DeleteUserAsync(Guid collectionId, Guid organizationUserId);
     Task UpdateUsersAsync(Guid id, IEnumerable<SelectionReadOnly> users);
     Task<ICollection<SelectionReadOnly>> GetManyUsersByIdAsync(Guid id);
-    Task DeleteManyAsync(Guid organizationId, IEnumerable<Guid> collectionIds);
+    Task DeleteManyAsync(IEnumerable<Guid> collectionIds);
 }
