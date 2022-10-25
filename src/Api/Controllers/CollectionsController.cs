@@ -167,7 +167,7 @@ public class CollectionsController : Controller
     [HttpPost("{id}/delete")]
     public async Task Delete(Guid orgId, Guid id)
     {
-        if (!await CanDeleteCollectionAsync(orgId, new[] { id }))
+        if (!await CanDeleteCollectionAsync(orgId, id))
         {
             throw new NotFoundException();
         }
@@ -258,9 +258,9 @@ public class CollectionsController : Controller
         return false;
     }
 
-    private async Task<bool> CanDeleteCollectionAsync(Guid orgId, IEnumerable<Guid> collectionIds)
+    private async Task<bool> CanDeleteCollectionAsync(Guid orgId, Guid collectionId)
     {
-        if (collectionIds == default)
+        if (collectionId == default)
         {
             return false;
         }
@@ -272,7 +272,7 @@ public class CollectionsController : Controller
 
         if (await _currentContext.DeleteAssignedCollections(orgId))
         {
-            var collectionDetails = await _collectionRepository.GetManyByManyIdsAsync(collectionIds);
+            var collectionDetails = await _collectionRepository.GetByIdAsync(collectionId, _currentContext.UserId.Value);
             return collectionDetails != null;
         }
 
